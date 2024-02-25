@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime
 import pandas as pd
 import argparse
+from typing import Any
 
 url = "https://www.douyin.com/aweme/v1/web/comment/list/"
 reply_url = url + "reply/"
@@ -22,7 +23,8 @@ headers = {
 }
 
 
-async def get_comments_async(client, aweme_id, cursor="0", count="50"):
+async def get_comments_async(client: httpx.AsyncClient, aweme_id: str, cursor: str = "0", count: str = "50") -> dict[
+    str, Any]:
     params = {
         "device_platform": "webapp",
         "aid": "6383",
@@ -35,23 +37,24 @@ async def get_comments_async(client, aweme_id, cursor="0", count="50"):
     return response.json()
 
 
-async def fetch_all_comments_async(aweme_id):
+async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
     async with httpx.AsyncClient() as client:
         cursor = 0
         all_comments = []
         has_more = 1
         while has_more:
             response = await get_comments_async(client, aweme_id, cursor=str(cursor))
-            comments = response.get("comments")
+            comments = response["comments"]
             if isinstance(comments, list):
                 all_comments.extend(comments)
-            has_more = response.get("has_more")
+            has_more = response["has_more"]
             if has_more:
-                cursor = response.get("cursor")
+                cursor = response["cursor"]
         return all_comments
 
 
-async def get_replys_async(client, comment_id, cursor="0", count="50"):
+async def get_replies_async(client: httpx.AsyncClient, comment_id: str, cursor: str = "0", count: str = "50") -> dict[
+    str, Any]:
     params = {
         "device_platform": "webapp",
         "aid": "6383",
@@ -64,7 +67,7 @@ async def get_replys_async(client, comment_id, cursor="0", count="50"):
     return response.json()
 
 
-async def fetch_all_replys_async(comments):
+async def fetch_all_replies_async(comments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     async with httpx.AsyncClient() as client:
         tasks = [fetch_replies_for_comment(client, comment) for comment in comments]
         all_replies = await asyncio.gather(*tasks)
@@ -72,23 +75,23 @@ async def fetch_all_replys_async(comments):
         return [item for sublist in all_replies for item in sublist]
 
 
-async def fetch_replies_for_comment(client, comment):
+async def fetch_replies_for_comment(client: httpx.AsyncClient, comment: dict[str, Any]) -> list[dict[str, Any]]:
     comment_id = comment["cid"]
     has_more = 1
     cursor = 0
     all_replies = []
     while has_more and comment["reply_comment_total"] > 0:
-        response = await get_replys_async(client, comment_id, cursor=str(cursor))
-        replies = response.get("comments")
+        response = await get_replies_async(client, comment_id, cursor=str(cursor))
+        replies = response["comments"]
         if isinstance(replies, list):
             all_replies.extend(replies)
-        has_more = response.get("has_more")
+        has_more = response["has_more"]
         if has_more:
-            cursor = response.get("cursor")
+            cursor = response["cursor"]
     return all_replies
 
 
-def process_comments(comments):
+def process_comments(comments: list[dict[str, Any]]) -> pd.DataFrame:
     data = [{
         "评论ID": c['cid'],
         "评论内容": c['text'],
@@ -103,7 +106,7 @@ def process_comments(comments):
     return pd.DataFrame(data)
 
 
-def process_replys(replys, comments):
+def process_replies(replies: list[dict[str, Any]], comments: pd.DataFrame) -> pd.DataFrame:
     data = [
         {
             "评论ID": c["cid"],
@@ -124,17 +127,17 @@ def process_replys(replys, comments):
             if c["reply_to_reply_id"] == "0"
             else c["reply_to_username"],
         }
-        for c in replys
+        for c in replies
     ]
 
     return pd.DataFrame(data)
 
 
-def save(data, filename):
+def save(data: pd.DataFrame, filename: str):
     data.to_csv(filename, index=False)
 
 
-def create_parser():
+def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='抖音评论和回复爬虫')
     parser.add_argument('--aweme_id', type=str, help='抖音视频的ID')
     parser.add_argument('--cookies', type=str, help='抖音网站的cookies')
@@ -152,14 +155,14 @@ async def main():
 
     all_comments = await fetch_all_comments_async(aweme_id)
     print(f"Found {len(all_comments)} comments.")
-    all_replys = await fetch_all_replys_async(all_comments)
-    print(f"Found {len(all_replys)} replies")
-    print(f"Found {len(all_replys) + len(all_comments)} in totals")
+    all_replies = await fetch_all_replies_async(all_comments)
+    print(f"Found {len(all_replies)} replies")
+    print(f"Found {len(all_replies) + len(all_comments)} in totals")
 
     all_comments = process_comments(all_comments)
     save(all_comments, "comments.csv")
-    all_replys = process_replys(all_replys, all_comments)
-    save(all_replys, "replys.csv")
+    all_replies = process_replies(all_replies, all_comments)
+    save(all_replies, "replies.csv")
 
 
 # 运行 main 函数
