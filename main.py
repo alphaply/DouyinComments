@@ -137,20 +137,11 @@ def save(data: pd.DataFrame, filename: str):
     data.to_csv(filename, index=False)
 
 
-def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description='抖音评论和回复爬虫')
-    parser.add_argument('--aweme_id', type=str, help='抖音视频的ID')
-    parser.add_argument('--cookies', type=str, help='抖音网站的cookies')
-    return parser
-
 
 async def main():
     global headers
-    # 获取所有评论
-    parser = create_parser()
-    args = parser.parse_args()
-    aweme_id = args.aweme_id
-    cookies = args.cookies
+    aweme_id = input('Enter the aweme_id: ')
+    cookies = input('Enter the cookies: ')
     headers['Cookie'] = cookies
 
     all_comments = await fetch_all_comments_async(aweme_id)

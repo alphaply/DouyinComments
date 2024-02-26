@@ -19,20 +19,19 @@ pip install httpx pandas
 ```
 
 ## 脚本运行
-使用以下命令运行脚本，需要提供视频的ID(aweme_id)和抖音登录后的Cookies(cookies)作为参数：
+使用以下命令运行脚本，根据提示出入视频的ID(aweme_id)和抖音登录后的Cookies(cookies)作为参数：
 ```bash
-python .\main.py --aweme_id 视频的ID --cookies 'xxxxxxx'
+python main.py 
 ```
 也可以在`main.py`文件中...
 ```python
 async def main():
     global headers
-    # 获取所有评论
-    parser = create_parser()
-    args = parser.parse_args()
-    aweme_id = 具体的id
-    cookies = 登录douyin.com之后的cookie
+    aweme_id = input('Enter the aweme_id: ') #直接替换
+    cookies = input('Enter the cookies: ') #直接替换
 ```
+直接替换为视频的ID和抖音登录后的Cookies，然后运行脚本：
+
 ## 输出
 脚本将在当前目录下生成两个CSV文件：
 
