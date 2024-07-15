@@ -2,12 +2,19 @@
 
 本脚本用于爬取指定抖音视频的评论及其回复，并将结果保存为CSV文件。
 
+参考项目：https://github.com/ShilongLee/Crawler
+
+抖音对这部分接口进行了加密，本项目直接参考该项目中处理params，headers的部分
+
+感谢ShilongLee!
+
 ## 环境要求
 
 脚本运行需要以下环境：
 - asyncio
 - httpx
 - pandas
+- execjs
 
 
 ## 安装依赖
@@ -15,22 +22,16 @@
 在运行脚本之前，请确保安装了所有必要的依赖：
 
 ```bash
-pip install httpx pandas
+pip install httpx pandas PyExecJS
 ```
 
 ## 脚本运行
-使用以下命令运行脚本，根据提示出入视频的ID(aweme_id)和抖音登录后的Cookies(cookies)作为参数：
-```bash
-python main.py 
-```
-也可以在`main.py`文件中...
-```python
-async def main():
-    global headers
-    aweme_id = input('Enter the aweme_id: ') #直接替换
-    cookies = input('Enter the cookies: ') #直接替换
-```
-直接替换为视频的ID和抖音登录后的Cookies，然后运行脚本：
+
+请先编辑脚本中的cookie变量，将其替换为您自己的cookie。然后运行脚本
+
+随后根据提示输入awesome_id即可！
+
+
 
 ## 输出
 脚本将在当前目录下生成两个CSV文件：

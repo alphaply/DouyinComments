@@ -1,38 +1,21 @@
 import httpx
 import asyncio
 from datetime import datetime
+from common import get_webid, cookies_to_dict, deal_params, get_ms_token, common
 import pandas as pd
 import argparse
 from typing import Any
 
 url = "https://www.douyin.com/aweme/v1/web/comment/list/"
 reply_url = url + "reply/"
-headers = {
-    "authority": "www.douyin.com",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    "Cookie": '',
-    "Referer": "https://www.douyin.com/",
-    "Sec-Ch-Ua": 'Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": "Windows",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-}
 
 
 async def get_comments_async(client: httpx.AsyncClient, aweme_id: str, cursor: str = "0", count: str = "50") -> dict[
     str, Any]:
-    params = {
-        "device_platform": "webapp",
-        "aid": "6383",
-        "channel": "channel_pc_web",
-        "aweme_id": aweme_id,
-        "cursor": cursor,
-        "count": count,
-    }
+    params = {"aweme_id": aweme_id, "cursor": cursor, "count": count, "item_type": 0}
+    headers = {"cookie": cookie}
+    params, headers = common(url, params, headers)
+
     response = await client.get(url, params=params, headers=headers)
     return response.json()
 
@@ -55,15 +38,11 @@ async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
 
 async def get_replies_async(client: httpx.AsyncClient, comment_id: str, cursor: str = "0", count: str = "50") -> dict[
     str, Any]:
-    params = {
-        "device_platform": "webapp",
-        "aid": "6383",
-        "channel": "channel_pc_web",
-        "comment_id": comment_id,
-        "cursor": cursor,
-        "count": count,
-    }
+    params = {"cursor": cursor, "count": count, "item_type": 0, "item_id": id, "comment_id": comment_id}
+    headers = {"cookie": cookie}
+    params, headers = common(reply_url, params, headers)
     response = await client.get(reply_url, params=params, headers=headers)
+    # print(response.text)
     return response.json()
 
 
@@ -137,13 +116,11 @@ def save(data: pd.DataFrame, filename: str):
     data.to_csv(filename, index=False)
 
 
+aweme_id = input("aweme_id: ")
+cookie = 'your cookie'
+
 
 async def main():
-    global headers
-    aweme_id = input('Enter the aweme_id: ')
-    cookies = input('Enter the cookies: ')
-    headers['Cookie'] = cookies
-
     all_comments = await fetch_all_comments_async(aweme_id)
     print(f"Found {len(all_comments)} comments.")
     all_replies = await fetch_all_replies_async(all_comments)
