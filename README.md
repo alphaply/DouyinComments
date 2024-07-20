@@ -15,11 +15,12 @@
 - httpx
 - pandas
 - execjs
+- nodejs（重要）
 
 
 ## 安装依赖
 
-在运行脚本之前，请确保安装了所有必要的依赖：
+在运行脚本之前，请确保安装了所有必要的依赖,别忘记安装nodejs：
 
 ```bash
 pip install httpx pandas PyExecJS
@@ -37,6 +38,6 @@ pip install httpx pandas PyExecJS
 脚本将在当前目录下生成两个CSV文件：
 
 - comments.csv：包含视频的所有评论信息。
-- replys.csv：包含所有评论的回复信息。
+- replies.csv：包含所有评论的回复信息。
 
 每个文件中都会包含评论或回复的详细信息，如评论内容、点赞数、评论时间、用户昵称等。

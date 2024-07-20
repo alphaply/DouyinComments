@@ -1,9 +1,10 @@
 import httpx
 import asyncio
 from datetime import datetime
-from common import get_webid, cookies_to_dict, deal_params, get_ms_token, common
 import pandas as pd
-import argparse
+from tqdm.asyncio import tqdm_asyncio
+from tqdm import tqdm
+from common import common
 from typing import Any
 
 url = "https://www.douyin.com/aweme/v1/web/comment/list/"
@@ -15,8 +16,8 @@ async def get_comments_async(client: httpx.AsyncClient, aweme_id: str, cursor: s
     params = {"aweme_id": aweme_id, "cursor": cursor, "count": count, "item_type": 0}
     headers = {"cookie": cookie}
     params, headers = common(url, params, headers)
-
     response = await client.get(url, params=params, headers=headers)
+    await asyncio.sleep(0.8)
     return response.json()
 
 
@@ -25,48 +26,57 @@ async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
         cursor = 0
         all_comments = []
         has_more = 1
-        while has_more:
-            response = await get_comments_async(client, aweme_id, cursor=str(cursor))
-            comments = response["comments"]
-            if isinstance(comments, list):
-                all_comments.extend(comments)
-            has_more = response["has_more"]
-            if has_more:
-                cursor = response["cursor"]
+        with tqdm(desc="Fetching comments", unit="comment") as pbar:
+            while has_more:
+                response = await get_comments_async(client, aweme_id, cursor=str(cursor))
+                comments = response.get("comments", [])
+                if isinstance(comments, list):
+                    all_comments.extend(comments)
+                    pbar.update(len(comments))
+                has_more = response.get("has_more", 0)
+                if has_more:
+                    cursor = response.get("cursor", 0)
+                await asyncio.sleep(1)
         return all_comments
 
 
 async def get_replies_async(client: httpx.AsyncClient, comment_id: str, cursor: str = "0", count: str = "50") -> dict[
     str, Any]:
-    params = {"cursor": cursor, "count": count, "item_type": 0, "item_id": id, "comment_id": comment_id}
+    params = {"cursor": cursor, "count": count, "item_type": 0, "item_id": comment_id, "comment_id": comment_id}
     headers = {"cookie": cookie}
     params, headers = common(reply_url, params, headers)
     response = await client.get(reply_url, params=params, headers=headers)
-    # print(response.text)
+    await asyncio.sleep(1)
     return response.json()
 
 
-async def fetch_all_replies_async(comments: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    async with httpx.AsyncClient() as client:
-        tasks = [fetch_replies_for_comment(client, comment) for comment in comments]
-        all_replies = await asyncio.gather(*tasks)
-        # 展平回复列表
-        return [item for sublist in all_replies for item in sublist]
-
-
-async def fetch_replies_for_comment(client: httpx.AsyncClient, comment: dict[str, Any]) -> list[dict[str, Any]]:
+async def fetch_replies_for_comment(client: httpx.AsyncClient, comment: dict[str, Any], pbar: tqdm) -> list[
+    dict[str, Any]]:
     comment_id = comment["cid"]
     has_more = 1
     cursor = 0
     all_replies = []
     while has_more and comment["reply_comment_total"] > 0:
         response = await get_replies_async(client, comment_id, cursor=str(cursor))
-        replies = response["comments"]
+        replies = response.get("comments", [])
         if isinstance(replies, list):
             all_replies.extend(replies)
-        has_more = response["has_more"]
+        has_more = response.get("has_more", 0)
         if has_more:
-            cursor = response["cursor"]
+            cursor = response.get("cursor", 0)
+        await asyncio.sleep(0.5)
+    pbar.update(1)
+    return all_replies
+
+
+async def fetch_all_replies_async(comments: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    all_replies = []
+    async with httpx.AsyncClient() as client:
+        with tqdm(total=len(comments), desc="Fetching replies", unit="comment") as pbar:
+            tasks = [fetch_replies_for_comment(client, comment, pbar) for comment in comments]
+            results = await asyncio.gather(*tasks)
+            for result in results:
+                all_replies.extend(result)
     return all_replies
 
 
@@ -108,7 +118,6 @@ def process_replies(replies: list[dict[str, Any]], comments: pd.DataFrame) -> pd
         }
         for c in replies
     ]
-
     return pd.DataFrame(data)
 
 
@@ -116,20 +125,21 @@ def save(data: pd.DataFrame, filename: str):
     data.to_csv(filename, index=False)
 
 
-aweme_id = input("aweme_id: ")
+aweme_id = input("Enter the aweme_id: ")
 cookie = 'your cookie'
 
-
 async def main():
+    # 评论部分
     all_comments = await fetch_all_comments_async(aweme_id)
     print(f"Found {len(all_comments)} comments.")
+    all_comments_ = process_comments(all_comments)
+    save(all_comments_, "comments.csv")
+
+    # 回复部分 如果不需要直接注释掉
     all_replies = await fetch_all_replies_async(all_comments)
     print(f"Found {len(all_replies)} replies")
     print(f"Found {len(all_replies) + len(all_comments)} in totals")
-
-    all_comments = process_comments(all_comments)
-    save(all_comments, "comments.csv")
-    all_replies = process_replies(all_replies, all_comments)
+    all_replies = process_replies(all_replies, all_comments_)
     save(all_replies, "replies.csv")
 
 
