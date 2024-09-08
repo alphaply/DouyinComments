@@ -1,11 +1,12 @@
-import httpx
 import asyncio
 from datetime import datetime
-import pandas as pd
-from tqdm.asyncio import tqdm_asyncio
-from tqdm import tqdm
-from common import common
 from typing import Any
+
+import httpx
+import pandas as pd
+from tqdm import tqdm
+
+from common import common
 
 url = "https://www.douyin.com/aweme/v1/web/comment/list/"
 reply_url = url + "reply/"
@@ -22,7 +23,7 @@ async def get_comments_async(client: httpx.AsyncClient, aweme_id: str, cursor: s
 
 
 async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=600) as client:
         cursor = 0
         all_comments = []
         has_more = 1
@@ -40,24 +41,24 @@ async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
         return all_comments
 
 
-async def get_replies_async(client: httpx.AsyncClient, comment_id: str, cursor: str = "0", count: str = "50") -> dict[
-    str, Any]:
+async def get_replies_async(client: httpx.AsyncClient, semaphore, comment_id: str, cursor: str = "0",
+                            count: str = "50") -> dict:
     params = {"cursor": cursor, "count": count, "item_type": 0, "item_id": comment_id, "comment_id": comment_id}
     headers = {"cookie": cookie}
     params, headers = common(reply_url, params, headers)
-    response = await client.get(reply_url, params=params, headers=headers)
-    await asyncio.sleep(1)
-    return response.json()
+    async with semaphore:
+        response = await client.get(reply_url, params=params, headers=headers)
+        await asyncio.sleep(1)  # 限制速度，避免请求过快
+        return response.json()
 
 
-async def fetch_replies_for_comment(client: httpx.AsyncClient, comment: dict[str, Any], pbar: tqdm) -> list[
-    dict[str, Any]]:
+async def fetch_replies_for_comment(client: httpx.AsyncClient, semaphore, comment: dict, pbar: tqdm) -> list:
     comment_id = comment["cid"]
     has_more = 1
     cursor = 0
     all_replies = []
     while has_more and comment["reply_comment_total"] > 0:
-        response = await get_replies_async(client, comment_id, cursor=str(cursor))
+        response = await get_replies_async(client, semaphore, comment_id, cursor=str(cursor))
         replies = response.get("comments", [])
         if isinstance(replies, list):
             all_replies.extend(replies)
@@ -69,11 +70,12 @@ async def fetch_replies_for_comment(client: httpx.AsyncClient, comment: dict[str
     return all_replies
 
 
-async def fetch_all_replies_async(comments: list[dict[str, Any]]) -> list[dict[str, Any]]:
+async def fetch_all_replies_async(comments: list) -> list:
     all_replies = []
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=600) as client:
+        semaphore = asyncio.Semaphore(10)  # 在这里创建信号量
         with tqdm(total=len(comments), desc="Fetching replies", unit="comment") as pbar:
-            tasks = [fetch_replies_for_comment(client, comment, pbar) for comment in comments]
+            tasks = [fetch_replies_for_comment(client, semaphore, comment, pbar) for comment in comments]
             results = await asyncio.gather(*tasks)
             for result in results:
                 all_replies.extend(result)
@@ -127,6 +129,7 @@ def save(data: pd.DataFrame, filename: str):
 
 aweme_id = input("Enter the aweme_id: ")
 cookie = 'your cookie'
+
 
 async def main():
     # 评论部分
