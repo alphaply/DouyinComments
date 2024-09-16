@@ -11,6 +11,8 @@ from common import common
 url = "https://www.douyin.com/aweme/v1/web/comment/list/"
 reply_url = url + "reply/"
 
+cookie = 'your cookie'
+aweme_id = input("Enter the aweme_id: ")
 
 async def get_comments_async(client: httpx.AsyncClient, aweme_id: str, cursor: str = "0", count: str = "50") -> dict[
     str, Any]:
@@ -86,6 +88,7 @@ def process_comments(comments: list[dict[str, Any]]) -> pd.DataFrame:
     data = [{
         "评论ID": c['cid'],
         "评论内容": c['text'],
+        "评论图片": c['image_list'][0]['origin_url']['url_list'],
         "点赞数": c['digg_count'],
         "评论时间": datetime.fromtimestamp(c['create_time']).strftime('%Y-%m-%d %H:%M:%S'),
         "用户昵称": c['user']['nickname'],
@@ -102,6 +105,7 @@ def process_replies(replies: list[dict[str, Any]], comments: pd.DataFrame) -> pd
         {
             "评论ID": c["cid"],
             "评论内容": c["text"],
+            "评论图片": c['image_list'][0]['origin_url']['url_list'],
             "点赞数": c["digg_count"],
             "评论时间": datetime.fromtimestamp(c["create_time"]).strftime(
                 "%Y-%m-%d %H:%M:%S"
@@ -127,8 +131,7 @@ def save(data: pd.DataFrame, filename: str):
     data.to_csv(filename, index=False)
 
 
-aweme_id = input("Enter the aweme_id: ")
-cookie = 'your cookie'
+
 
 
 async def main():

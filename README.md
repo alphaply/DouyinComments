@@ -20,7 +20,7 @@
 
 ## 安装依赖
 
-在运行脚本之前，请确保安装了所有必要的依赖,别忘记安装nodejs：
+在运行脚本之前，请确保安装了所有必要的依赖,别忘记安装**nodejs**：
 
 ```bash
 pip install httpx pandas PyExecJS
@@ -41,3 +41,6 @@ pip install httpx pandas PyExecJS
 - replies.csv：包含所有评论的回复信息。
 
 每个文件中都会包含评论或回复的详细信息，如评论内容、点赞数、评论时间、用户昵称等。
+
+## 日志
+新增获取评论回复图片
