@@ -88,7 +88,7 @@ def process_comments(comments: list[dict[str, Any]]) -> pd.DataFrame:
     data = [{
         "评论ID": c['cid'],
         "评论内容": c['text'],
-        "评论图片": c['image_list'][0]['origin_url']['url_list'],
+        "评论图片": c['image_list'][0]['origin_url']['url_list'] if c['image_list'] else None,
         "点赞数": c['digg_count'],
         "评论时间": datetime.fromtimestamp(c['create_time']).strftime('%Y-%m-%d %H:%M:%S'),
         "用户昵称": c['user']['nickname'],
@@ -105,7 +105,7 @@ def process_replies(replies: list[dict[str, Any]], comments: pd.DataFrame) -> pd
         {
             "评论ID": c["cid"],
             "评论内容": c["text"],
-            "评论图片": c['image_list'][0]['origin_url']['url_list'],
+            "评论图片": c['image_list'][0]['origin_url']['url_list'] if c['image_list'] else None,
             "点赞数": c["digg_count"],
             "评论时间": datetime.fromtimestamp(c["create_time"]).strftime(
                 "%Y-%m-%d %H:%M:%S"
