@@ -3,7 +3,6 @@ import execjs
 import urllib.parse
 import re
 import random
-import json
 import cookiesparser
 
 HOST = 'https://www.douyin.com'
@@ -76,7 +75,7 @@ def get_webid(headers: dict):
         return match.group(1)
     return None
 
-def deal_params(params: dict, headers: dict) -> str:
+def deal_params(params: dict, headers: dict) -> dict:
     cookie = headers.get('cookie') or headers.get('Cookie')
     if not cookie:
         return params
