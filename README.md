@@ -15,6 +15,7 @@
 - httpx
 - pandas
 - execjs
+- cookiesparser
 - nodejs（重要）
 
 
@@ -23,7 +24,7 @@
 在运行脚本之前，请确保安装了所有必要的依赖,别忘记安装**nodejs**：
 
 ```bash
-pip install httpx pandas PyExecJS
+pip install -r requirements.txt
 ```
 
 ## 脚本运行

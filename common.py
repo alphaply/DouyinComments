@@ -3,7 +3,7 @@ import execjs
 import urllib.parse
 import re
 import random
-import json
+import cookiesparser
 
 HOST = 'https://www.douyin.com'
 
@@ -75,23 +75,11 @@ def get_webid(headers: dict):
         return match.group(1)
     return None
 
-
-def cookies_to_dict(cookie_string) -> dict:
-    cookies = cookie_string.split('; ')
-    cookie_dict = {}
-    for cookie in cookies:
-        if cookie == '' or cookie == 'douyin.com':
-            continue
-        key, value = cookie.split('=', 1)[0], cookie.split('=', 1)[1]
-        cookie_dict[key] = value
-    return cookie_dict
-
-
-def deal_params(params: dict, headers: dict) -> str:
+def deal_params(params: dict, headers: dict) -> dict:
     cookie = headers.get('cookie') or headers.get('Cookie')
     if not cookie:
         return params
-    cookie_dict = cookies_to_dict(cookie)
+    cookie_dict = cookiesparser.parse(cookie)
     params['msToken'] = get_ms_token()
     params['screen_width'] = cookie_dict.get('dy_swidth', 2560)
     params['screen_height'] = cookie_dict.get('dy_sheight', 1440)
