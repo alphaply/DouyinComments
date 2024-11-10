@@ -21,7 +21,13 @@ async def get_comments_async(client: httpx.AsyncClient, aweme_id: str, cursor: s
     params, headers = common(url, params, headers)
     response = await client.get(url, params=params, headers=headers)
     await asyncio.sleep(0.8)
-    return response.json()
+    try:
+        return response.json()
+    except ValueError:
+        # Return an empty dictionary if the response is not valid JSON.
+        # Alternatively, you could raise an exception here to indicate that the cookies might be expired or invalid.
+        return {}
+
 
 
 async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
