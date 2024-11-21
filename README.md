@@ -29,14 +29,25 @@ pip install -r requirements.txt
 
 ## 脚本运行
 
-请先编辑脚本中的cookie变量，将其替换为您自己的cookie。然后运行脚本
+请先创建一个cookie.txt文件，将cookie写入该txt文件中。然后运行脚本
+
+现在有两个版本，对于数据量比较少的，可以运行main.py
+
+对于数据量比较大的，尤其是replies，先运行fetch_comments.py，再运行fetch_replies.py
 
 随后根据提示输入awesome_id即可！
+
+运行main.py的文件会放入data/v1/<awesome_id>中
+
+而另一种运行方式的文件会放入data/<awesome_id>中
+
+
+
 
 
 
 ## 输出
-脚本将在当前目录下生成两个CSV文件：
+脚本将在x相应的文件目录下生成两个CSV文件：
 
 - comments.csv：包含视频的所有评论信息。
 - replies.csv：包含所有评论的回复信息。
