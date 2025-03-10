@@ -1,4 +1,4 @@
-cookiesparser==1.3
+cookiesparser==1.4.0
 httpx==0.27.2
 pandas==2.2.3
 PyExecJS==1.5.1

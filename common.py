@@ -21,10 +21,10 @@ COMMON_PARAMS = {
     'browser_language': 'zh-CN',
     'browser_platform': 'Win32',
     'browser_name': 'Chrome',
-    'browser_version': '126.0.0.0',
+    'browser_version': '131.0.0.0',
     'browser_online': 'true',
     'engine_name': 'Blink',
-    'engine_version': '126.0.0.0',
+    'engine_version': '131.0.0.0',
     'os_name': 'Windows',
     'os_version': '10',
     'cpu_core_num': '24',  # device_web_cpu_core
@@ -41,13 +41,13 @@ COMMON_PARAMS = {
 }
 
 COMMON_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "sec-fetch-site": "same-origin",
     "sec-fetch-mode": "cors",
     "sec-fetch-dest": "empty",
     "sec-ch-ua-platform": "Windows",
     "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+    "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="131", "Google Chrome";v="131"',
     "referer": "https://www.douyin.com/?recommend=1",
     "priority": "u=1, i",
     "pragma": "no-cache",
@@ -57,8 +57,8 @@ COMMON_HEADERS = {
     "dnt": "1",
 }
 
-DOUYIN_SIGN = execjs.compile(open('douyin.js', encoding='utf-8').read())
-
+with open("douyin.js", "r", encoding="utf-8") as dy:
+    DOUYIN_SIGN = execjs.compile(dy.read())
 
 def get_webid(headers: dict):
     url = 'https://www.douyin.com/?recommend=1'
@@ -69,6 +69,7 @@ def get_webid(headers: dict):
     if response.status_code != 200 or response.text == '':
         # print(f'failed get webid, url: {url}, header: {headers}')
         return None
+    
     pattern = r'\\"user_unique_id\\":\\"(\d+)\\"'
     match = re.search(pattern, response.text)
     if match:
@@ -79,6 +80,7 @@ def deal_params(params: dict, headers: dict) -> dict:
     cookie = headers.get('cookie') or headers.get('Cookie')
     if not cookie:
         return params
+    
     cookie_dict = cookiesparser.parse(cookie)
     params['msToken'] = get_ms_token()
     params['screen_width'] = cookie_dict.get('dy_swidth', 2560)
@@ -88,29 +90,27 @@ def deal_params(params: dict, headers: dict) -> dict:
     params['verifyFp'] = cookie_dict.get('s_v_web_id', None)
     params['fp'] = cookie_dict.get('s_v_web_id', None)
     params['webid'] = get_webid(headers)
+
     return params
 
 
 def get_ms_token(randomlength=120):
-    """
-    根据传入长度产生随机字符串
-    """
-    random_str = ''
-    base_str = 'ABCDEFGHIGKLMNOPQRSTUVWXYZabcdefghigklmnopqrstuvwxyz0123456789='
-    length = len(base_str) - 1
-    for _ in range(randomlength):
-        random_str += base_str[random.randint(0, length)]
+    random_str = "".join(random.choices('ABCDEFGHIGKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=', k=randomlength))
     return random_str
 
 
 def common(uri, params: dict, headers: dict) -> tuple[dict, dict]:
     params.update(COMMON_PARAMS)
     headers.update(COMMON_HEADERS)
+
     params = deal_params(params, headers)
     query = '&'.join([f'{k}={urllib.parse.quote(str(v))}' for k, v in params.items()])
     call_name = 'sign_datail'
+    
     if 'reply' in uri:
         call_name = 'sign_reply'
+    
     a_bogus = DOUYIN_SIGN.call(call_name, query, headers["User-Agent"])
     params["a_bogus"] = a_bogus
+
     return params, headers
