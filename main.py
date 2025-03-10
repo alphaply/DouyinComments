@@ -52,7 +52,7 @@ async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
 
 async def get_replies_async(client: httpx.AsyncClient, semaphore, comment_id: str, cursor: str = "0",
                             count: str = "50") -> dict:
-    params = {"cursor": cursor, "count": count, "item_type": 0, "item_id": comment_id, "comment_id": comment_id}
+    params = {"cursor": cursor, "count": count, "item_type": 0, "item_id": aweme_id, "comment_id": comment_id}
     headers = {"cookie": cookie}
     params, headers = common(reply_url, params, headers)
     async with semaphore:

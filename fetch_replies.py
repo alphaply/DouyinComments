@@ -14,12 +14,12 @@ with open('cookie.txt', 'r') as f:
 
 async def get_replies_async(client: httpx.AsyncClient, semaphore, comment_id: str, cursor: str = "0",
                             count: str = "50") -> dict:
-    params = {"cursor": cursor, "count": count, "item_type": 0, "item_id": comment_id, "comment_id": comment_id}
+    params = {"cursor": cursor, "count": count, "item_type": 0, "item_id": aweme_id, "comment_id": comment_id}
     headers = {"cookie": cookie}
     params, headers = common(reply_url, params, headers)
     async with semaphore:
         response = await client.get(reply_url, params=params, headers=headers)
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.2)
         try:
             return response.json()
         except ValueError:
@@ -38,7 +38,7 @@ async def fetch_replies_for_comment(client: httpx.AsyncClient, semaphore, commen
         has_more = response.get("has_more", 0)
         if has_more:
             cursor = response.get("cursor", 0)
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.2)
     pbar.update(1)
     return all_replies
 
@@ -74,6 +74,7 @@ def save_replies_and_progress(replies: list, output_file: str, progress_file: st
             if c["reply_to_reply_id"] != "0"
             else c["reply_id"],
             "回复给谁": c.get('reply_to_username'),
+            "ip归属": c.get('ip_label', '未知')
         }
         for c in replies
     ]

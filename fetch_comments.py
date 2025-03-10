@@ -1,16 +1,19 @@
 import asyncio
+import os
+from datetime import datetime
+from typing import Any
+
 import httpx
 import pandas as pd
 from tqdm import tqdm
-from datetime import datetime
-from typing import Any
-import os
+
 from common import common
 
 url = "https://www.douyin.com/aweme/v1/web/comment/list/"
 
 with open('cookie.txt', 'r') as f:
     cookie = f.readline().strip()
+
 
 async def get_comments_async(client: httpx.AsyncClient, aweme_id: str, cursor: str = "0", count: str = "50") -> dict:
     params = {"aweme_id": aweme_id, "cursor": cursor, "count": count, "item_type": 0}
@@ -22,6 +25,7 @@ async def get_comments_async(client: httpx.AsyncClient, aweme_id: str, cursor: s
         return response.json()
     except ValueError:
         return {}
+
 
 async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
     async with httpx.AsyncClient(timeout=600) as client:
@@ -41,6 +45,7 @@ async def fetch_all_comments_async(aweme_id: str) -> list[dict[str, Any]]:
                 await asyncio.sleep(1)
         return all_comments
 
+
 def process_comments(comments: list[dict[str, Any]]) -> pd.DataFrame:
     data = [{
         "评论ID": c['cid'],
@@ -53,12 +58,14 @@ def process_comments(comments: list[dict[str, Any]]) -> pd.DataFrame:
         "用户抖音号": c['user'].get('unique_id', '未知'),
         "用户签名": c['user'].get('signature', '未知'),
         "回复总数": c['reply_comment_total'],
-        "ip归属":c['ip_label']
+        "ip归属": c['ip_label']
     } for c in comments]
     return pd.DataFrame(data)
 
+
 def save(data: pd.DataFrame, filename: str):
     data.to_csv(filename, index=False)
+
 
 async def main():
     aweme_id = input("Enter the aweme_id: ")
@@ -70,6 +77,7 @@ async def main():
     comments_file = os.path.join(base_dir, "comments.csv")
     save(comments_df, comments_file)
     print("Comments saved to comments.csv")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
